@@ -1,0 +1,12 @@
+{
+  "name": "algorithmic-web-daw",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "test": "node --test tests/arrangement-engine.test.mjs tests/fl-automation-mixer-extended.test.mjs tests/generation.test.mjs tests/music-making-gaps.test.mjs tests/playlist-tracks.test.mjs tests/pro-features.test.mjs tests/project-format.test.mjs tests/project-storage.test.mjs tests/starter-templates.test.mjs tests/track-fx-graph.test.mjs tests/transport.test.mjs tests/voice-engine.test.mjs"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
+  }
+}

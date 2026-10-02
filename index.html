@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Hum or sing. Algorithmic Web DAW turns one take into sound, lyrics, and a beat you can arrange and export.">
+<title>Algorithmic Web DAW</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<style>
+:root{--bg:#fff;--panel:#fff;--ink:#0a0a0a;--mut:#8a8a8f;--line:#ececec;--drum:#d6303a;--mel:#0a0a0a;--off:#f5f5f6;--paper:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}[hidden]{display:none!important}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Inter Tight",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:0 24px 140px}
+.top,label,button,.hint,.meta,.lab,.desc{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:22px 0;min-height:70px}
+.r{display:flex;gap:14px;align-items:center}#toast{color:var(--mut)}
+.view{display:none;padding:56px 0 0}.view.on{display:block;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+h1{font-size:clamp(44px,9.5vw,104px);line-height:.88;letter-spacing:-.055em;font-weight:500;text-transform:uppercase;margin:0 0 20px}
+h2{font-size:22px;line-height:1.1;font-weight:700;letter-spacing:-.02em;margin:0}
+.desc,.hint,.meta{color:var(--mut);margin:0}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vertical-align:-4px;margin-right:8px}
+.i.f{fill:currentColor;stroke:none}
+button{border:1px solid var(--ink);background:transparent;color:var(--ink);padding:9px 18px;border-radius:999px;cursor:pointer}
+button:hover{background:var(--off)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,.card:focus-visible{outline:2px solid var(--drum);outline-offset:3px}
+button:disabled{opacity:.4;pointer-events:none}
+button.plain{border:0;padding:6px 0;font-weight:500;font-size:14px}
+button.rec{background:var(--drum);border-color:var(--drum);color:#fff;font-size:14px;padding:14px 30px}
+button.rec:hover{background:#bf2a33}
+.act{display:flex;justify-content:center;margin:48px 0 20px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.bar.c{justify-content:center}
+#msg{text-align:center;color:var(--mut);min-height:22px;margin:0 0 28px;font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:28px;margin-top:64px}
+.card{position:relative;border:1px solid var(--line);border-radius:6px;padding:14px;cursor:pointer;text-align:left}
+.card:hover{border-color:var(--ink)}
+.card canvas,.part canvas{width:100%;height:110px;background:var(--off);border-radius:4px;display:block}
+.cm{display:flex;flex-direction:column;margin-top:12px}.cm span{color:var(--mut);font:12px "JetBrains Mono",monospace}
+.card.new{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;border:1px dashed var(--mut);border-radius:6px}
+.del{position:absolute;right:20px;top:20px;padding:6px;border-radius:50%;background:var(--panel);border-color:var(--line)}.del .i{margin:0}
+.del.arm{background:var(--drum);color:#fff;border-color:var(--drum)}
+.mic{position:relative;height:min(420px,52vh);display:flex;justify-content:center;margin:56px 0 0;--lvl:0;--glow:rgba(214,48,58,.55)}
+.mic.g-rnb{--glow:rgba(196,122,44,.5)}.mic.g-rap{--glow:rgba(40,40,44,.45)}.mic.g-lofi{--glow:rgba(138,115,85,.45)}.mic.g-rock{--glow:rgba(214,48,58,.6)}
+.mic .art{position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;animation:micIn .4s ease}
+.mic .art svg,.mic .art img{height:100%;width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(0 26px 22px rgba(0,0,0,.18))}
+@keyframes micIn{from{opacity:0;transform:translateY(10px)}}
+.micap{text-align:center;color:var(--mut);margin:12px 0 0;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;min-height:18px}
+.halo{position:absolute;inset:12% 20%;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 65%);opacity:calc(var(--lvl)*.55);transform:scale(calc(.8 + var(--lvl)*.45));transition:opacity .08s,transform .08s;pointer-events:none}
+.words{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.w{position:absolute;font-weight:500;font-size:clamp(22px,3.4vw,38px);letter-spacing:-.04em;opacity:0;animation:fw 4.5s ease-out forwards}
+@keyframes fw{0%{opacity:0;transform:translateY(16px)}20%{opacity:.3}100%{opacity:0;transform:translateY(-70px)}}
+.dot{opacity:.35}.live .dot{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:1}}
+.parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:36px;margin-top:64px}
+.part{display:flex;flex-direction:column;gap:14px;transition:opacity .4s}
+.ph{display:flex;align-items:center;gap:10px}.ph .i{margin:0;width:22px;height:22px}
+.snip{height:110px;margin:0;background:var(--off);border-radius:4px;padding:14px;font-size:18px;letter-spacing:-.02em;line-height:1.35;overflow:hidden}
+.snip.none{color:var(--mut);font-size:14px}
+.part.busy{opacity:.3}.part button{align-self:flex-start}
+.wtop{display:flex;justify-content:space-between;gap:16px;align-items:center}
+#pname{font:500 clamp(30px,6vw,56px)/1 "Inter Tight",sans-serif;letter-spacing:-.045em;border:0;border-bottom:1px solid transparent;background:none;color:var(--ink);padding:0 0 4px;width:100%;min-width:0}
+#pname:hover{border-color:var(--line)}
+.trans{display:flex;align-items:center;gap:32px;margin-top:48px}
+.vin{position:relative;width:128px;height:128px;flex:none}
+.disc{position:absolute;left:4%;top:4%;width:92%;aspect-ratio:1;border-radius:50%;border:1px solid var(--line);background:conic-gradient(transparent 0 40deg,rgba(255,255,255,.17) 55deg,transparent 78deg 220deg,rgba(255,255,255,.12) 236deg,transparent 258deg),repeating-radial-gradient(circle,#090909 0 2px,#171717 2px 3px)}
+.disc.spin{animation:spin 3s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.disc.spin,.mic .art{animation:none}}
+.ring{position:absolute;left:0;top:0;width:100%;fill:none;stroke-width:.5}
+.r0{stroke:var(--line)}.r1{stroke:var(--drum);stroke-width:1;transition:stroke-dashoffset .12s linear}
+.label{position:absolute;left:50%;top:50%;width:36%;aspect-ratio:1;transform:translate(-50%,-50%)}
+.go{width:100%;height:100%;border-radius:50%;border:0;background:var(--paper);color:#0a0a0a;padding:0;display:grid;place-items:center}.go .i{margin:0}
+.go:hover{background:#f2f2f2}
+.tctl{flex:1;display:flex;gap:24px;align-items:center;flex-wrap:wrap}.tctl label{flex:1 1 200px}
+label{display:flex;flex-direction:column;color:var(--mut);gap:2px}label b{color:var(--ink);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--drum)}
+.fader{position:relative;display:block;width:100%;min-width:0;height:36px;touch-action:none;user-select:none;cursor:ew-resize}
+.fader::before{content:"";position:absolute;inset:0}
+.fader.has-ticks{height:44px}
+.fader-slot{position:absolute;left:8px;right:8px;top:50%;height:4px;transform:translateY(-50%);border-radius:2px;background:#e4e4e7;box-shadow:inset 0 1px 1px rgba(10,10,10,.18);overflow:hidden}
+.fader-fill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--t,0) * 100%);background:var(--drum);border-radius:2px 0 0 2px}
+.fader-cap{position:absolute;top:50%;left:calc(8px + (100% - 16px) * var(--t,0));width:16px;height:26px;border-radius:3px;background:#fafafa;border:1px solid #d2d2d6;box-shadow:0 1px 2px rgba(10,10,10,.16);transform:translate(-50%,-50%);pointer-events:none}
+.fader-cap::after{content:"";position:absolute;left:50%;top:7px;width:1px;height:12px;margin-left:-.5px;background:var(--drum)}
+.fader:hover .fader-cap{border-color:#0a0a0a}
+.fader.drag .fader-cap{transform:translate(-50%,calc(-50% + 1px));box-shadow:0 1px 1px rgba(10,10,10,.12)}
+.fader.has-ticks .fader-slot,.fader.has-ticks .fader-cap{top:15px}
+.fader-ticks{position:absolute;left:8px;right:8px;top:30px;height:4px;pointer-events:none}
+.fader-ticks i{position:absolute;top:0;width:1px;height:4px;background:var(--mut);transform:translateX(-50%)}
+.fader input[type=range]{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;pointer-events:none;appearance:none}
+.fader input:focus,.fader input:focus-visible{outline:none}
+.fader:has(input:focus-visible){outline:2px solid var(--drum);outline-offset:3px}
+.zone{padding:80px 0 0}
+.th{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin-bottom:24px}.hint{margin-left:auto;text-align:right}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-top:80px}
+.tab{border:0;border-radius:0;border-bottom:2px solid transparent;padding:12px 18px;font-size:13px;margin-bottom:-1px}
+.tab.on{border-color:var(--ink)}.tab:hover{background:none}
+.panel{padding-top:44px}
+.rollwrap{overflow-x:auto}
+canvas#roll{height:170px;background:var(--off);border-radius:4px;display:block;cursor:pointer}
+select,input.sec{font:12px "JetBrains Mono",ui-monospace,monospace;background:var(--off);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px}
+.names input{width:100%;border:0;border-bottom:1px solid transparent;background:transparent;font:12px "JetBrains Mono",ui-monospace,monospace;color:var(--mut);padding:2px 0}
+.names input:hover,.names input:focus{border-color:var(--line);outline:none}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:8px}
+.opt{border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.opt.on{border-color:var(--ink)}
+.opt canvas{width:100%;height:72px;background:var(--off);border-radius:4px}
+.wordedit{position:fixed;z-index:5;font:14px "JetBrains Mono",ui-monospace,monospace;padding:6px 8px;border:1px solid var(--ink);border-radius:4px;width:140px}
+.chip.on{background:var(--ink);color:var(--bg)}
+textarea{width:100%;font:inherit;font-size:20px;background:var(--off);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:16px;resize:vertical}
+.sl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:20px 28px;margin-bottom:32px;align-items:end}
+.scroll{overflow-x:auto;max-width:100%;min-width:0}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:6px;min-width:600px}
+.row span{width:46px;font-size:12px;color:var(--mut);font-family:"JetBrains Mono",monospace}
+.steps{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;flex:1}
+.st{height:34px;padding:0;border-radius:3px;background:var(--off);border:1px solid var(--line)}
+.st:nth-child(4n+1){border-color:var(--mut)}
+.st.on{background:var(--drum);border-color:var(--drum)}.st.now{box-shadow:0 0 0 2px var(--ink)}
+.slots,.names{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;min-width:640px}
+.names{margin-bottom:6px;font:12px "JetBrains Mono",monospace;color:var(--mut)}.names span{grid-column:span 2}
+.slot{height:76px;border-radius:4px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0}
+.slot small{opacity:.85}
+.slot.off{background:var(--off);border-color:var(--line)}
+.slot.drums{background:var(--drum);color:#fff;border-color:var(--drum)}
+.slot.melody{background:var(--mel);color:var(--panel);border-color:var(--mel)}
+.slot.both{background:linear-gradient(135deg,var(--drum) 50%,var(--mel) 50%);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.6)}
+.slot.now{outline:3px solid var(--drum);outline-offset:2px}
+.recopt{display:flex;gap:28px;align-items:flex-end;justify-content:center;flex-wrap:wrap;margin:28px 0 0}
+.recopt label{min-width:220px}
+canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;display:block}
+.tstrip{display:flex;flex-direction:column;gap:10px}
+.trow{display:grid;grid-template-columns:92px minmax(0,1fr) auto auto auto;gap:12px;align-items:center}
+.trow b{font-size:13px;font-weight:500}
+.trow .db{font:12px "JetBrains Mono",ui-monospace,monospace;color:var(--ink);min-width:64px;text-align:right}
+.ms{width:26px;height:26px;min-width:26px;padding:0;border-radius:3px;background:#fafafa;border-color:#d2d2d6;font-size:11px;line-height:1}
+.ms[data-k=mute].on{background:var(--drum);border-color:var(--drum);color:#fff}
+.ms[data-k=solo].on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.plog{margin-top:64px;border-top:1px solid var(--line);padding-top:20px}
+.plog summary{cursor:pointer}
+#plogStats{margin:14px 0}
+#v-producer .opt{margin-bottom:16px}
+#v-producer .trow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;margin-bottom:16px}
+#v-producer .trow>b{flex:0 0 148px;align-self:center}
+#v-producer .trow>label,#v-producer .trow>.fader{flex:1 1 180px;min-width:160px;max-width:100%}
+#v-producer .sl .ms{justify-self:start;align-self:end}
+#v-producer h2{font-size:15px;font-weight:500}
+#peakRead{margin-left:12px}
+.hero{position:relative;display:grid;grid-template-columns:minmax(0,.93fr) minmax(360px,1.07fr);gap:clamp(22px,4vw,52px);align-items:center;min-height:610px;margin-top:-28px}
+.hero-copy{position:relative;z-index:3;padding:56px 0 64px}
+.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 22px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
+.eyebrow::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--drum);box-shadow:0 0 0 5px rgba(214,48,58,.1)}
+.lede{font-size:clamp(18px,2.2vw,22px);letter-spacing:-.025em;line-height:1.35;max-width:28em;margin:0 0 32px}
+.hero-visual{position:relative;align-self:stretch;min-height:610px;isolation:isolate}
+.hero-disc{position:absolute;z-index:-1;width:min(94%,440px);aspect-ratio:1;right:-1%;top:12%;border-radius:50%;background:radial-gradient(circle at 50% 50%,#f5b9bd 0 5%,#df555e 5.5% 6.2%,var(--drum) 6.5% 100%);box-shadow:0 26px 70px rgba(214,48,58,.21)}
+.hero-disc::before,.hero-disc::after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.23)}
+.hero-disc::before{inset:10%}.hero-disc::after{inset:22%}
+.hero-portrait{position:absolute;z-index:1;height:100%;width:100%;right:-4%;bottom:0;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 24px 22px rgba(10,10,10,.2));user-select:none}
+.hero-badge{position:absolute;z-index:2;right:-4px;top:15%;display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid rgba(255,255,255,.72);border-radius:999px;background:rgba(255,255,255,.86);box-shadow:0 10px 26px rgba(10,10,10,.1);backdrop-filter:blur(8px);color:var(--ink);font:500 11px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em}
+.hero-badge i{width:7px;height:7px;border-radius:50%;background:var(--drum);box-shadow:0 0 0 4px rgba(214,48,58,.12)}
+.hero-result{position:absolute;z-index:2;left:-22px;bottom:34px;width:252px;padding:15px;border:1px solid rgba(220,220,224,.9);border-radius:14px;background:rgba(255,255,255,.92);box-shadow:0 18px 44px rgba(10,10,10,.13);backdrop-filter:blur(10px)}
+.hero-result>span{display:block;margin-bottom:11px;color:var(--mut);font:500 10px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}
+.hero-result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.hero-result-grid b{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px;border-radius:8px;background:var(--off);font:500 10px "JetBrains Mono",ui-monospace,monospace}
+.hero-result-grid .i{width:17px;height:17px;margin:0}.hero-result-grid b:first-child .i{color:var(--drum)}
+.land-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+#v-home button,.top button{white-space:nowrap}
+#v-home h1{max-width:7ch}
+#v-home .parts{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:22px}
+.flow article{position:relative;min-width:0;border:1px solid var(--line);border-radius:16px;padding:10px 10px 20px;background:linear-gradient(180deg,#fafafa 0 52%,#fff 78%);overflow:hidden;transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease}
+.flow article:hover{border-color:#d8d8dc;transform:translateY(-3px);box-shadow:0 18px 34px rgba(10,10,10,.07)}
+.flow-art{position:relative;height:172px;margin:0 0 18px;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 40%,#fff 0 20%,#f3f3f5 68%,#ededf0 100%)}
+.flow-art::after{content:"";position:absolute;left:16%;right:16%;bottom:14px;height:14px;border-radius:50%;background:rgba(10,10,10,.11);filter:blur(12px);transform:scaleY(.45)}
+.flow-art img{position:relative;z-index:1;width:94%;height:94%;object-fit:contain;filter:drop-shadow(0 12px 10px rgba(10,10,10,.15));transition:transform .25s ease;user-select:none}
+.flow article:hover .flow-art img{transform:translateY(-3px) scale(1.025)}
+.flow-copy{padding:0 6px}
+.flow .n{display:inline-flex;align-items:center;min-height:24px;margin:0 0 12px;padding:3px 9px;border:1px solid #d9d9dd;border-radius:999px;background:rgba(255,255,255,.82);color:var(--ink)}
+.flow h2{margin-bottom:7px}.flow .desc{line-height:1.55}
+.section-kicker{display:flex;align-items:center;gap:8px;margin:0 0 14px;color:var(--drum);font:500 11px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase}
+.section-kicker::before{content:"";width:18px;height:1px;background:currentColor}
+.product-story{padding-top:112px}
+.story-grid{display:grid;grid-template-columns:minmax(220px,.58fr) minmax(0,1.42fr);gap:48px;align-items:center}
+.story-copy h2,.capture-copy h2,.export-copy h2{font-size:clamp(34px,5.1vw,58px);line-height:.96;letter-spacing:-.045em;font-weight:500;margin:0 0 20px}
+.story-copy>.desc,.capture-copy>.desc,.export-copy>.desc{font:17px/1.5 "Inter Tight",system-ui,sans-serif;color:#454549;margin-bottom:28px}
+.story-points{display:flex;flex-direction:column;gap:18px;margin:0;padding:0;list-style:none}
+.story-points li{display:grid;grid-template-columns:30px 1fr;gap:11px;padding-top:16px;border-top:1px solid var(--line)}
+.story-points span{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font:10px "JetBrains Mono",monospace}
+.story-points b{display:block;margin-bottom:3px}.story-points p{margin:0;color:var(--mut);font:12px/1.5 "JetBrains Mono",monospace}
+.studio-window{position:relative;border:1px solid #27272b;border-radius:18px;background:#111114;padding:8px;box-shadow:0 30px 70px rgba(10,10,10,.2);overflow:hidden}
+.studio-chrome{height:42px;display:flex;align-items:center;gap:7px;padding:0 10px;color:#c7c7ca;font:10px "JetBrains Mono",monospace}
+.studio-chrome i{width:7px;height:7px;border-radius:50%;background:#3c3c41}.studio-chrome i:first-child{background:var(--drum)}
+.studio-chrome b{margin-left:6px;font-weight:500}.studio-chrome span:last-child{margin-left:auto;color:#77777e}
+.studio-screen{position:relative;border-radius:11px;background:#fff;padding:18px;overflow:hidden}
+.demo-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}.demo-play{display:grid;place-items:center;width:45px;height:45px;border-radius:50%;background:#0a0a0a;color:#fff}.demo-play .i{margin:0;width:15px}.demo-title{display:flex;flex-direction:column}.demo-title b{font-size:17px}.demo-title small{color:var(--mut);font:10px "JetBrains Mono",monospace}.demo-save{margin-left:auto;padding:7px 11px;border:1px solid var(--line);border-radius:999px;font:10px "JetBrains Mono",monospace}
+.demo-tabs{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:15px}.demo-tabs span{padding:0 0 9px;color:var(--mut);font:10px "JetBrains Mono",monospace}.demo-tabs span:first-child{color:var(--ink);border-bottom:2px solid var(--ink)}
+.demo-timeline{position:relative;min-width:530px}.demo-ruler{display:grid;grid-template-columns:62px repeat(8,1fr);gap:4px;margin-bottom:5px}.demo-ruler span{color:#aaa;font:8px "JetBrains Mono",monospace;text-align:center}.demo-ruler span:first-child{text-align:left}
+.demo-lane{display:grid;grid-template-columns:62px 1fr;gap:6px;align-items:center;margin-bottom:6px}.demo-lane>b{font:9px "JetBrains Mono",monospace;color:#6f6f74}.demo-clips{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}.demo-clips i{height:27px;border-radius:3px;background:#ededf0;border:1px solid #e2e2e5}.demo-clips i.voice{background:#151517;border-color:#151517}.demo-clips i.beat{background:var(--drum);border-color:var(--drum)}.demo-clips i.both{background:linear-gradient(135deg,var(--drum) 50%,#151517 50%);border-color:#151517}
+.demo-playhead{position:absolute;z-index:2;top:0;bottom:0;left:53%;width:1px;background:var(--drum);box-shadow:0 0 0 1px rgba(214,48,58,.08)}.demo-playhead::before{content:"";position:absolute;top:-3px;left:-3px;width:7px;height:7px;border-radius:50%;background:var(--drum)}
+.demo-roll{position:relative;height:108px;margin-top:16px;border-radius:7px;overflow:hidden;background:repeating-linear-gradient(to right,transparent 0 calc(6.25% - 1px),#e4e4e7 calc(6.25% - 1px) 6.25%),repeating-linear-gradient(to bottom,#f7f7f8 0 17px,#ececef 17px 18px)}
+.demo-roll i{position:absolute;left:calc(var(--x)*1%);top:calc(var(--y)*1%);width:calc(var(--w)*1%);height:9px;border-radius:2px;background:#141416}.demo-roll i:nth-child(3n){background:var(--drum)}
+.capture-card{display:grid;grid-template-columns:minmax(300px,.88fr) minmax(0,1.12fr);align-items:center;min-height:540px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(135deg,#f5f5f6,#fff 70%);overflow:hidden}
+.capture-visual{position:relative;align-self:stretch;min-height:520px;isolation:isolate}.capture-visual::before{content:"";position:absolute;z-index:-1;width:390px;aspect-ratio:1;border-radius:50%;left:-17%;top:14%;background:var(--drum);box-shadow:0 26px 65px rgba(214,48,58,.18)}
+.capture-visual img{position:absolute;inset:2% -3% 0 0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 24px 18px rgba(10,10,10,.19));user-select:none}
+.capture-copy{padding:60px 54px 60px 24px}.capture-paths{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:28px 0}.capture-path{padding:14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.75)}.capture-path b{display:block;margin-bottom:4px}.capture-path span{color:var(--mut);font:10px/1.45 "JetBrains Mono",monospace}
+.export-card{position:relative;display:grid;grid-template-columns:1.15fr .85fr;min-height:430px;border-radius:22px;background:#101012;color:#fff;overflow:hidden}.export-copy{position:relative;z-index:2;padding:64px 20px 64px 64px}.export-copy .section-kicker{color:#ef6c74}.export-copy>.desc{max-width:30em;color:#b5b5ba}.format-list{display:flex;flex-wrap:wrap;gap:8px}.format-list span{padding:8px 11px;border:1px solid #34343a;border-radius:999px;background:#19191d;color:#e8e8ea;font:10px "JetBrains Mono",monospace}
+.export-art{position:relative;min-height:400px;isolation:isolate}.export-art::before{content:"";position:absolute;z-index:-1;width:350px;aspect-ratio:1;right:-18%;top:8%;border-radius:50%;background:var(--drum)}.export-art img{position:absolute;width:115%;height:115%;right:-9%;bottom:-12%;object-fit:contain;filter:drop-shadow(0 25px 20px rgba(0,0,0,.42));user-select:none}
+.trust-strip{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;margin-top:18px;overflow:hidden}.trust-strip div{padding:18px 20px;background:#fff}.trust-strip div+div{border-left:1px solid var(--line)}.trust-strip b{display:block;font-size:14px}.trust-strip span{color:var(--mut);font:10px "JetBrains Mono",monospace}
+.final-cta{margin-top:100px;padding:56px;border-radius:22px;background:var(--drum);color:#fff;text-align:center}.final-cta h2{font-size:clamp(38px,7vw,72px);line-height:.95;letter-spacing:-.045em;font-weight:500;margin:0 0 16px}.final-cta p{max-width:36em;margin:0 auto 28px;color:rgba(255,255,255,.82);font-size:17px}.final-cta .rec{background:#fff;border-color:#fff;color:var(--ink)}.final-cta .rec:hover{background:#f3f3f4}
+.preview-slots .slot{border:1px solid var(--ink);padding:0;cursor:default;font:12px "JetBrains Mono",ui-monospace,monospace}
+@media (max-width:720px){.trans{gap:18px}.vin{width:96px;height:96px}.wtop{flex-wrap:wrap}.trow{grid-template-columns:72px minmax(0,1fr) auto auto auto}#v-home .hint{margin-left:0;text-align:left}.hero{grid-template-columns:1fr;gap:0;min-height:0;margin-top:-34px}.hero-copy{padding:50px 0 8px}.hero-visual{min-height:min(137vw,540px)}.hero-disc{width:min(91%,420px);right:1%;top:12%}.hero-portrait{right:-2%}.hero-result{left:0;bottom:20px;width:min(252px,72%)}.hero-badge{right:0;top:14%}.flow-art{height:196px}.product-story{padding-top:90px}.story-grid{grid-template-columns:1fr;gap:34px}.studio-window{margin:0 -8px}.studio-screen{overflow-x:auto}.capture-card{grid-template-columns:1fr}.capture-visual{min-height:440px}.capture-visual::before{left:-8%;top:10%}.capture-copy{padding:42px 26px 46px}.export-card{grid-template-columns:1fr}.export-copy{padding:48px 28px 20px}.export-art{min-height:330px}.export-art::before{right:-10%}.export-art img{width:100%;height:100%;right:0;bottom:-4%}.trust-strip{grid-template-columns:1fr}.trust-strip div+div{border-left:0;border-top:1px solid var(--line)}.final-cta{margin-top:80px;padding:44px 24px}}
+@media (max-width:430px){.hero-visual{min-height:480px}.hero-result{padding:12px}.hero-result-grid b{padding:8px 2px}.hero-badge{top:11%}}
+@media (prefers-reduced-motion:reduce){.flow article,.flow-art img{transition:none}.flow article:hover{transform:none}.flow article:hover .flow-art img{transform:none}}
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h1M7 8v8M11 4v16M15 8v8M19 10v4M21 12h0"/></symbol><symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6"/></symbol><symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol></defs></svg>
+<main>
+<nav class="top"><button class="plain" id="brand">A/D</button><span class="r"><span id="toast" role="status"></span><button id="navGal" hidden><svg class="i"><use href="#i-folder"/></svg>Projects</button></span></nav>
+
+<div class="view" id="v-home">
+<section class="hero" aria-label="Turn a hum into a song">
+<div class="hero-copy"><p class="eyebrow meta">Voice to song, in your browser</p><h1>From a hum</h1>
+<p class="lede">Hum or sing into the mic. One take becomes sound, lyrics, and a beat. Arrange the bars, mix the tracks, and export the song.</p>
+<div class="land-acts"><button class="rec" data-land="start">Start a song</button><button data-land="projects"><svg class="i"><use href="#i-folder"/></svg>Projects</button></div>
+<p class="meta" style="margin-top:18px">No install. Projects stay on this device.</p></div>
+<div class="hero-visual"><div class="hero-disc" aria-hidden="true"></div><img class="hero-portrait" src="./assets/hero-creator-web.png" alt="Music creator humming into a studio microphone while listening through headphones" width="768" height="1152" decoding="async">
+<span class="hero-badge" aria-hidden="true"><i></i>LIVE IDEA</span>
+<div class="hero-result" aria-hidden="true"><span>One take becomes</span><div class="hero-result-grid"><b><svg class="i"><use href="#i-wave"/></svg>Sound</b><b><svg class="i"><use href="#i-text"/></svg>Lyrics</b><b><svg class="i"><use href="#i-grid"/></svg>Beat</b></div></div></div>
+</section>
+
+<section class="zone" aria-label="One take, three parts"><div class="th"><h2>One take, three parts</h2><p class="hint">From one recording</p></div>
+<div class="parts" style="margin-top:0">
+<article class="part"><div class="ph"><svg class="i"><use href="#i-wave"/></svg><h2>Sound</h2></div><canvas id="homeSound" width="320" height="110"></canvas><p class="meta">Pitch becomes notes you can move</p></article>
+<article class="part"><div class="ph"><svg class="i"><use href="#i-text"/></svg><h2>Lyrics</h2></div><p class="snip">stay with me tonight</p><p class="meta">Words line up with the melody</p></article>
+<article class="part"><div class="ph"><svg class="i"><use href="#i-grid"/></svg><h2>Beat</h2></div><canvas id="homeBeat" width="320" height="110"></canvas><p class="meta">Rhythm lands on a step grid</p></article>
+</div></section>
+
+<section class="zone product-story" aria-label="Product workspace preview"><div class="story-grid">
+<div class="story-copy"><p class="section-kicker">The product</p><h2>Not a blank timeline.</h2><p class="desc">Your recording arrives as something you can already play, understand, and shape.</p>
+<ol class="story-points"><li><span>01</span><div><b>Move the melody</b><p>Drag notes to change pitch or timing.</p></div></li><li><span>02</span><div><b>Rewrite the rhythm</b><p>Tap the step grid and humanize the feel.</p></div></li><li><span>03</span><div><b>Build the form</b><p>Turn the motif into sections and variations.</p></div></li></ol></div>
+<div class="studio-window" role="img" aria-label="Preview of the song workspace with editable tracks, arrangement clips, and melody notes"><div class="studio-chrome"><i></i><i></i><i></i><b>Algorithmic Studio</b><span>LOCAL PROJECT</span></div><div class="studio-screen">
+<div class="demo-head"><span class="demo-play"><svg class="i"><use href="#i-play"/></svg></span><span class="demo-title"><b>Late night idea</b><small>100 BPM &middot; C MINOR</small></span><span class="demo-save">SAVED</span></div>
+<div class="demo-tabs"><span>ARRANGE</span><span>SOUND</span><span>LYRICS</span><span>BEAT</span></div>
+<div class="demo-timeline"><div class="demo-playhead"></div><div class="demo-ruler"><span>BARS</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
+<div class="demo-lane"><b>Voice</b><div class="demo-clips"><i></i><i class="voice"></i><i class="voice"></i><i class="voice"></i><i class="voice"></i><i class="voice"></i><i></i><i></i></div></div>
+<div class="demo-lane"><b>Beat</b><div class="demo-clips"><i class="beat"></i><i class="beat"></i><i class="both"></i><i class="both"></i><i class="both"></i><i class="both"></i><i class="beat"></i><i></i></div></div>
+<div class="demo-lane"><b>Bass</b><div class="demo-clips"><i></i><i></i><i class="voice"></i><i class="voice"></i><i class="voice"></i><i class="voice"></i><i></i><i></i></div></div></div>
+<div class="demo-roll"><i style="--x:4;--y:61;--w:10"></i><i style="--x:17;--y:48;--w:8"></i><i style="--x:28;--y:35;--w:12"></i><i style="--x:43;--y:49;--w:8"></i><i style="--x:54;--y:28;--w:13"></i><i style="--x:70;--y:42;--w:9"></i><i style="--x:82;--y:21;--w:13"></i></div>
+</div></div></div></section>
+
+<section class="zone" aria-label="Record live or upload a voice memo"><div class="capture-card"><div class="capture-visual"><img src="./assets/voice-memo-phone-web.png" alt="Hand holding a phone with a voice memo waveform ready to upload" width="640" height="960" loading="lazy" decoding="async"></div>
+<div class="capture-copy"><p class="section-kicker">Start anywhere</p><h2>The voice memo counts.</h2><p class="desc">Use the microphone now or bring the idea you caught earlier. The same pitch, rhythm, and arrangement tools are waiting on the other side.</p>
+<div class="capture-paths"><div class="capture-path"><b>Sing it live</b><span>Set tempo, count in, and capture the take.</span></div><div class="capture-path"><b>Bring the file</b><span>Upload the voice memo already on your device.</span></div></div>
+<div class="bar"><button class="rec" data-land="start">Record now</button><button data-land="upload"><svg class="i"><use href="#i-up"/></svg>Upload a memo</button></div></div></div></section>
+
+<section class="zone" aria-label="How a song starts"><div class="th"><h2>How a song starts</h2></div>
+<div class="flow">
+<article><figure class="flow-art"><img src="./assets/step-record-web.png" alt="Studio microphone in a shock mount" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">01 · Capture</p><h2>Record</h2><p class="desc">Set a tempo, count in, and sing. Or drop in a voice memo.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-split-web.png" alt="One audio cable splitting into three outputs" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">02 · Separate</p><h2>Split</h2><p class="desc">The take opens as sound, lyrics, and a beat you can each edit.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-arrange-web.png" alt="Music production pad controller" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">03 · Build</p><h2>Arrange</h2><p class="desc">Each bar is empty, drums, sound, or both. Build the form from there.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-deliver-web.png" alt="Studio headphones around a mastered audio disc" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">04 · Finish</p><h2>Deliver</h2><p class="desc">Mix the tracks, then export WAV, MIDI, stems, or a share pack.</p></div></article>
+</div></section>
+
+<section class="zone" aria-label="Export options"><div class="export-card"><div class="export-copy"><p class="section-kicker">Take it with you</p><h2>Keep the session. Take the files.</h2><p class="desc">Finish here or move into the rest of your workflow with aligned, useful exports.</p><div class="format-list"><span>WAV MIX</span><span>MIDI</span><span>STEMS</span><span>SHARE PACK</span></div></div><div class="export-art"><img src="./assets/step-deliver-web.png" alt="Studio headphones around a mastered audio disc" width="640" height="640" loading="lazy" decoding="async"></div></div>
+<div class="trust-strip"><div><b>Browser based</b><span>NO INSTALL REQUIRED</span></div><div><b>Local by default</b><span>PROJECTS STAY ON DEVICE</span></div><div><b>DAW ready</b><span>WAV, MIDI, AND STEMS</span></div></div></section>
+
+<div class="final-cta"><h2>Your first take is enough.</h2><p>Start with the idea you can hum. Shape the rest once you can hear it.</p><button class="rec" data-land="start">Start a song</button></div>
+</div>
+
+<div class="view" id="v-gallery"><h1>Projects</h1><p class="desc">Pick up where you left off.</p><div class="cards" id="cards"></div></div>
+
+<div class="view" id="v-record"><h1>Sing an idea</h1><p class="desc">Hum or sing. The mic follows how it sounds.</p>
+<div class="mic" id="mic"><div class="halo"></div><div class="words" id="words"></div><div class="art" id="micArt"></div></div>
+<p class="micap" id="micap" aria-live="polite"></p>
+<div class="recopt"><label>Tempo <b id="recBpmV">100 BPM</b><input type="range" id="recBpm" min="60" max="160" value="100"></label>
+<button type="button" class="chip on" id="countIn" aria-pressed="true">Count-in: on</button></div>
+<div class="act"><button class="rec" id="rec"></button></div>
+<p id="msg">Allow microphone access when asked, then sing or hum.</p>
+<div class="bar c"><button id="upl"><svg class="i"><use href="#i-up"/></svg>Upload a voice memo</button><button id="demo"><svg class="i"><use href="#i-spark"/></svg>Use demo idea</button><button id="recBack" hidden><svg class="i"><use href="#i-folder"/></svg>Projects</button><input type="file" id="file" accept="audio/*" hidden></div></div>
+
+<div class="view" id="v-split"><h1 id="sTitle">Splitting your idea</h1><p class="desc">One recording, three parts you can edit.</p>
+<div class="parts">
+<article class="part busy" id="pS"><div class="ph"><svg class="i"><use href="#i-wave"/></svg><h2>Sound</h2></div><canvas id="cS" width="320" height="110"></canvas><p class="meta" id="mS">Listening for pitch</p><button id="eS">Edit sound</button></article>
+<article class="part busy" id="pL"><div class="ph"><svg class="i"><use href="#i-text"/></svg><h2>Lyrics</h2></div><p class="snip" id="sL">Reading the words</p><p class="meta" id="mL">From your voice</p><button id="eL">Edit lyrics</button></article>
+<article class="part busy" id="pB"><div class="ph"><svg class="i"><use href="#i-grid"/></svg><h2>Beat</h2></div><canvas id="cB" width="320" height="110"></canvas><p class="meta" id="mB">Finding the rhythm</p><button id="eB">Edit beat</button></article>
+</div>
+<section class="zone" aria-label="Pitch over time"><div class="th"><h2>Pitch</h2><p class="hint">Gray is rejected, black is raw pitch, red is an octave fix, bars are the melody</p></div>
+<canvas id="pitchDbg" width="960" height="220" aria-label="Pitch over time"></canvas>
+<div class="sl tune">
+<label>RMS min <b id="rmsV">0.020</b><input type="range" id="rmsMin" min="0" max="0.1" step="0.005" value="0.02"></label>
+<label>Clarity <b id="clarV">0.62</b><input type="range" id="clarityMin" min="0.3" max="0.95" step="0.01" value="0.62"></label>
+<label>Octave fold <b id="octFV">10</b><input type="range" id="octaveFold" min="7" max="15" step="1" value="10"></label>
+<label>Octave tolerance <b id="octTV">3</b><input type="range" id="octaveTol" min="0" max="6" step="1" value="3"></label>
+<label>Median <b id="medV">5</b><input type="range" id="medianN" min="1" max="9" step="2" value="5"></label>
+<label>Min votes <b id="voteV">2</b><input type="range" id="minVotes" min="1" max="6" step="1" value="2"></label>
+</div></section>
+<div class="act"><button class="rec" id="goWork" disabled>Open workspace<svg class="i" style="margin:0 0 0 8px"><use href="#i-arrow"/></svg></button></div></div>
+
+<div class="view" id="v-work">
+<div class="wtop"><input id="pname" aria-label="Project name" placeholder="Untitled idea"><span class="r"><button id="producerBtn">Producer</button><button id="saveBtn"><svg class="i"><use href="#i-save"/></svg>Save</button></span></div>
+<div class="trans"><div class="vin"><div class="disc" id="disc"></div>
+<svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="r0" cx="50" cy="50" r="49.6"/><circle class="r1" id="ringp" cx="50" cy="50" r="49.6" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100" transform="rotate(-90 50 50)"/></svg>
+<div class="label"><button class="go" id="play" aria-label="Play or stop"></button></div></div>
+<div class="tctl"><label>Tempo <b id="bpmV">100 BPM</b><input type="range" id="bpm" min="60" max="160" value="100"></label><span class="lab" id="lab"></span></div></div>
+
+<section class="zone" aria-label="Tracks"><div class="th"><h2>Tracks</h2><p class="hint">Volume, mute, and solo</p></div><div class="tstrip" id="trackStrip"></div></section>
+
+<section class="zone" aria-label="Arrangement"><div class="th"><h2>Arrangement</h2><p class="hint">Click a bar to cycle: empty, drums, sound, both</p></div>
+<div class="scroll"><div class="names" id="secNames"></div><div class="slots" id="slots"></div></div></section>
+
+<div class="tabs" role="tablist"><button class="tab on" data-t="sound"><svg class="i"><use href="#i-wave"/></svg>Sound</button><button class="tab" data-t="lyrics"><svg class="i"><use href="#i-text"/></svg>Lyrics</button><button class="tab" data-t="beat"><svg class="i"><use href="#i-grid"/></svg>Beat</button><button class="tab" data-t="expand"><svg class="i"><use href="#i-spark"/></svg>Expand</button></div>
+
+<section class="panel" id="t-sound"><div class="th"><h2>Sound</h2><p class="hint">Click a note to give it a word. Drag it to change pitch or timing.</p></div>
+<div class="rollwrap"><canvas id="roll" width="960" height="340"></canvas></div>
+<div class="bar" style="margin-top:24px"><button class="chip" data-o="sine">Soft</button><button class="chip" data-o="triangle">Warm</button><button class="chip" data-o="sawtooth">Bright</button><button class="chip" data-o="square">Retro</button>
+<button id="octD">Octave down</button><span class="lab" id="octV">0 oct</span><button id="octU">Octave up</button><button id="clr">Clear notes</button>
+<label>Voice <select id="voiceSrc"><option value="take">My voice</option><option value="clone">Clone (API later)</option></select></label></div></section>
+
+<section class="panel" id="t-lyrics" hidden><div class="th"><h2>Lyrics</h2><p class="hint" id="lyrNote">Words line up with the melody notes</p></div><textarea id="lyr" rows="3" placeholder="Type your words here."></textarea></section>
+
+<section class="panel" id="t-beat" hidden><div class="th"><h2>Beat</h2><p class="hint" id="beatInfo">Tap steps to draw your own</p></div>
+<div class="sl"><label>Swing <b id="swV">30%</b><input type="range" id="sw" min="0" max="100" value="30"></label>
+<label>Velocity variance <b id="vvV">25%</b><input type="range" id="vv" min="0" max="60" value="25"></label>
+<label>Timing drift <b id="tdV">8 ms</b><input type="range" id="td" min="0" max="30" value="8"></label>
+<button id="hz" class="chip on" aria-pressed="true">Humanize: on</button></div>
+<div class="bar" style="margin-bottom:20px"><button id="reana">Re-analyze at current tempo</button></div><div class="scroll" id="grid"></div></section>
+
+<section class="panel" id="t-expand" hidden><div class="th"><h2>Expand the hum</h2><p class="hint">The hum stays the motif. These controls only decide how far it goes.</p></div>
+<div class="sl">
+<label>Key <b id="keyV">C</b><select id="keySel"></select></label>
+<label>Scale <b id="scaleV">Major</b><select id="scaleSel"><option value="major">Major</option><option value="minor">Minor</option><option value="pentatonic">Pentatonic</option></select></label>
+<label>Bars <b id="barsV">8 bars</b><input type="range" id="bars" min="4" max="32" step="1" value="8"></label>
+<label>Genre <b id="genreV">Pop</b><select id="genre"><option value="pop">Pop</option><option value="rnb">R&B</option><option value="rap">Rap</option><option value="lofi">Lo-fi</option><option value="rock">Rock</option></select></label>
+<label>Mood <b id="moodV">Soft</b><select id="mood"><option value="soft">Soft</option><option value="bright">Bright</option><option value="dark">Dark</option><option value="driving">Driving</option></select></label>
+<label>Variation <b id="varV">25%</b><input type="range" id="var" min="0" max="100" step="1" value="25"></label>
+</div>
+<div class="bar" style="margin-bottom:16px"><button id="buildExp">Build 4 options</button><button id="buildHarm">Harmony from this line</button><button id="regenExp">Regenerate</button></div>
+<div class="opts" id="previews"></div></section>
+<details class="plog" id="plog"><summary>Producer log</summary><p class="meta" id="plogStats"></p>
+<div class="bar"><button type="button" id="plogExport">Export JSON</button><button type="button" id="plogClear">Clear</button></div></details>
+</div>
+
+<div class="view" id="v-producer">
+<div class="wtop"><button class="plain" id="prodBack"><svg class="i"><use href="#i-back"/></svg>Back</button><h2>Producer</h2><span class="r"><button id="prodPlay">Play</button><button id="prodSave"><svg class="i"><use href="#i-save"/></svg>Save</button></span></div>
+<p class="desc">Deeper controls for the song you are already writing.</p>
+<div class="tabs" id="prodTabs" role="tablist"><button class="tab on" data-p="mix">Mix</button><button class="tab" data-p="beat">Beat</button><button class="tab" data-p="sound">Sound</button><button class="tab" data-p="arrange">Arrange</button><button class="tab" data-p="deliver">Deliver</button></div>
+<section class="panel" id="p-mix"></section>
+<section class="panel" id="p-beat" hidden></section>
+<section class="panel" id="p-sound" hidden></section>
+<section class="panel" id="p-arrange" hidden></section>
+<section class="panel" id="p-deliver" hidden></section>
+</div>
+</main>
+<script type="module" src="./app.js"></script></body></html>
