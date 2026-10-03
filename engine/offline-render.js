@@ -27,7 +27,7 @@ export async function renderSong(song, { bpm = 100, only = null, vocalBuffer = n
   const sampleRate = 44100;
   const ctx = new OfflineAudioContext(2, Math.ceil(duration * sampleRate), sampleRate);
   const master = ctx.createGain();
-  master.gain.value = 0.9;
+  master.gain.value = song.masterVolume == null ? 0.92 : Math.max(0, Math.min(1.25, Number(song.masterVolume) || 0));
   master.connect(ctx.destination);
   const groups = {};
   for (const id of ['drums', 'music', 'vocals']) {
@@ -51,7 +51,10 @@ export async function renderSong(song, { bpm = 100, only = null, vocalBuffer = n
     });
     input.gain.value = audible;
     const fx = connectFxChain(ctx, input, track.fx || []);
-    fx.output.connect(groups[track.group || GROUP_FOR[track.type] || 'music']);
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = Math.max(-1, Math.min(1, Number(track.pan) || 0));
+    fx.output.connect(pan);
+    pan.connect(groups[track.group || GROUP_FOR[track.type] || 'music']);
     inputs[track.type] = input;
   }
   const kickNoise = noiseBuffer(ctx, 0.2);
@@ -72,19 +75,20 @@ export async function renderSong(song, { bpm = 100, only = null, vocalBuffer = n
       const drumScale = clipGainAt(song.clips, 'drums', bar) * automationGain(song.automation?.drums, bar, bars);
       kept.forEach(note => hitDrum(ctx, inputs.drums, kickNoise, note, when + (note.nudge || 0) * stepSeconds * 0.5, drumScale));
     }
-    if (!playMel) continue;
-    const melScale = clipGainAt(song.clips, 'melody', bar) * automationGain(song.automation?.melody, bar, bars);
-    (song.track('melody')?.notes || []).forEach(note => {
-      if (note.step !== step || !inputs.melody) return;
-      const freq = 440 * 2 ** (((note.midi || 60) + (song.trans || 0) - 69) / 12);
-      const dur = Math.max(0.05, (note.len || 1) * stepSeconds);
-      if (song.useLayer) synthesize3xOscNote(ctx, freq, dur, song.patch, when, inputs.melody);
-      else tone(ctx, inputs.melody, freq, when, dur, (note.vel || 0.7) * 0.2 * melScale, 'triangle');
-    });
-    if (inputs.vocal && vocalBuffer) {
+    if (playMel) {
+      const melScale = clipGainAt(song.clips, 'melody', bar) * automationGain(song.automation?.melody, bar, bars);
+      (song.track('melody')?.notes || []).forEach(note => {
+        if (note.step !== step || !inputs.melody) return;
+        const freq = 440 * 2 ** (((note.midi || 60) + (song.trans || 0) - 69) / 12);
+        const dur = Math.max(0.05, (note.len || 1) * stepSeconds);
+        if (song.useLayer) synthesize3xOscNote(ctx, freq, dur, song.patch, when, inputs.melody);
+        else tone(ctx, inputs.melody, freq, when, dur, (note.vel || 0.7) * 0.2 * melScale, 'triangle');
+      });
+    }
+    if ((inputs.vocal || inputs.vocals) && vocalBuffer) {
       (song.track('melody')?.notes || []).forEach(note => {
         if (note.step !== step || note.audioStart == null) return;
-        playSlice(ctx, inputs.vocal, vocalBuffer, note, when, stepSeconds);
+        playSlice(ctx, inputs.vocal || inputs.vocals, vocalBuffer, note, when, stepSeconds);
       });
     }
     (song.track('chords')?.notes || []).filter(note => note.step === step).forEach(note => {

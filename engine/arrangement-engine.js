@@ -61,7 +61,7 @@ export function automationGainAtFractional(clip, songBarFloat) {
  */
 export function pickTopClip(clips, songBar) {
   const covering = (clips || [])
-    .filter(clip => songBar >= clip.startBar && songBar < clip.startBar + clip.lengthBars)
+    .filter(clip => !clip.muted && songBar >= clip.startBar && songBar < clip.startBar + clip.lengthBars)
     .sort((a, b) => a.startBar - b.startBar || String(a.id).localeCompare(String(b.id)));
   return covering.length ? covering[covering.length - 1] : null;
 }
@@ -70,7 +70,9 @@ function patternNotesForBar(pattern, localBar, meter) {
   if (!pattern) return [];
   const perBar = stepsPerBar(meter);
   const offset = localBar * perBar;
-  return (pattern.notes || [])
+  const list = pattern.notes || pattern.steps || [];
+  if (!Array.isArray(list)) return [];
+  return list
     .filter(note => note.x >= offset && note.x < offset + perBar)
     .map(note => ({ ...note, x: note.x - offset }));
 }

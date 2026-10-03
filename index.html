@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Hum or sing. Algorithmic Web DAW turns one take into sound, lyrics, and a beat you can arrange and export.">
-<title>Algorithmic Web DAW</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<meta name="description" content="Humanizer is a browser DAW. Start from a hum, or open a producing session and build the beat, chords, and arrangement.">
+<meta name="theme-color" content="#ffffff">
+<title>Humanizer — Turn a Hum into a Song</title>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<script vite-ignore src="./vendor/tone-14.8.49.js"></script>
 <style>
+@font-face{font-family:"Inter Tight";font-style:normal;font-display:swap;font-weight:400;src:url("./assets/fonts/inter-tight-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Inter Tight";font-style:normal;font-display:swap;font-weight:500;src:url("./assets/fonts/inter-tight-latin-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Inter Tight";font-style:normal;font-display:swap;font-weight:700;src:url("./assets/fonts/inter-tight-latin-700-normal.woff2") format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-display:swap;font-weight:400;src:url("./assets/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-display:swap;font-weight:500;src:url("./assets/fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2")}
 :root{--bg:#fff;--panel:#fff;--ink:#0a0a0a;--mut:#8a8a8f;--line:#ececec;--drum:#d6303a;--mel:#0a0a0a;--off:#f5f5f6;--paper:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}[hidden]{display:none!important}html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Inter Tight",system-ui,sans-serif}
@@ -25,6 +31,7 @@ button:hover{background:var(--off)}
 button:focus-visible,input:focus-visible,textarea:focus-visible,.card:focus-visible{outline:2px solid var(--drum);outline-offset:3px}
 button:disabled{opacity:.4;pointer-events:none}
 button.plain{border:0;padding:6px 0;font-weight:500;font-size:14px}
+#brand{font-weight:700;letter-spacing:.08em}
 button.rec{background:var(--drum);border-color:var(--drum);color:#fff;font-size:14px;padding:14px 30px}
 button.rec:hover{background:#bf2a33}
 .act{display:flex;justify-content:center;margin:48px 0 20px}
@@ -143,6 +150,16 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 #v-producer .sl .ms{justify-self:start;align-self:end}
 #v-producer h2{font-size:15px;font-weight:500}
 #peakRead{margin-left:12px}
+.prod-transport{display:grid;grid-template-columns:auto auto auto auto minmax(180px,1fr) auto;gap:10px;align-items:center;margin:28px 0 0;padding:14px;border:1px solid var(--line);border-radius:8px;background:var(--off)}
+.prod-position{min-width:78px;color:var(--ink);font:500 14px "JetBrains Mono",ui-monospace,monospace;text-align:center;font-variant-numeric:tabular-nums}
+.prod-seek{display:flex;align-items:center;min-width:160px}.prod-seek .fader{height:30px}
+.loop-range{display:flex;gap:8px;align-items:end;grid-column:5/-1;justify-self:end}.loop-range label{min-width:72px}.loop-range input{width:72px}
+.meter{position:relative;height:8px;min-width:110px;flex:1;background:#e4e4e7;border-radius:2px;overflow:hidden}
+.meter i{display:block;width:calc(var(--meter,0) * 100%);height:100%;background:linear-gradient(90deg,#252525 0 78%,#d69a30 78% 92%,var(--drum) 92%);transition:width .08s linear}
+.meter.clip{box-shadow:0 0 0 1px var(--drum)}.meter-read{min-width:62px;text-align:right;font:11px "JetBrains Mono",ui-monospace,monospace;color:var(--mut)}
+.mix-meter{display:flex;gap:8px;align-items:center;min-width:180px;flex:1 1 220px}
+.clip-card{border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:12px}.clip-card.muted{opacity:.58}.clip-card.locked{border-style:dashed}
+@media(max-width:680px){.prod-transport{grid-template-columns:auto auto auto 1fr}.prod-position{grid-column:1/-1;text-align:left}.prod-seek{grid-column:1/-1}.loop-range{grid-column:1/-1}.mix-meter{min-width:100%}}
 .hero{position:relative;display:grid;grid-template-columns:minmax(0,.93fr) minmax(360px,1.07fr);gap:clamp(22px,4vw,52px);align-items:center;min-height:610px;margin-top:-28px}
 .hero-copy{position:relative;z-index:3;padding:56px 0 64px}
 .eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 22px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
@@ -203,27 +220,33 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 .export-card{position:relative;display:grid;grid-template-columns:1.15fr .85fr;min-height:430px;border-radius:22px;background:#101012;color:#fff;overflow:hidden}.export-copy{position:relative;z-index:2;padding:64px 20px 64px 64px}.export-copy .section-kicker{color:#ef6c74}.export-copy>.desc{max-width:30em;color:#b5b5ba}.format-list{display:flex;flex-wrap:wrap;gap:8px}.format-list span{padding:8px 11px;border:1px solid #34343a;border-radius:999px;background:#19191d;color:#e8e8ea;font:10px "JetBrains Mono",monospace}
 .export-art{position:relative;min-height:400px;isolation:isolate}.export-art::before{content:"";position:absolute;z-index:-1;width:350px;aspect-ratio:1;right:-18%;top:8%;border-radius:50%;background:var(--drum)}.export-art img{position:absolute;width:115%;height:115%;right:-9%;bottom:-12%;object-fit:contain;filter:drop-shadow(0 25px 20px rgba(0,0,0,.42));user-select:none}
 .trust-strip{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:14px;margin-top:18px;overflow:hidden}.trust-strip div{padding:18px 20px;background:#fff}.trust-strip div+div{border-left:1px solid var(--line)}.trust-strip b{display:block;font-size:14px}.trust-strip span{color:var(--mut);font:10px "JetBrains Mono",monospace}
-.final-cta{margin-top:100px;padding:56px;border-radius:22px;background:var(--drum);color:#fff;text-align:center}.final-cta h2{font-size:clamp(38px,7vw,72px);line-height:.95;letter-spacing:-.045em;font-weight:500;margin:0 0 16px}.final-cta p{max-width:36em;margin:0 auto 28px;color:rgba(255,255,255,.82);font-size:17px}.final-cta .rec{background:#fff;border-color:#fff;color:var(--ink)}.final-cta .rec:hover{background:#f3f3f4}
+.final-cta{margin-top:100px;padding:56px;border-radius:22px;background:var(--drum);color:#fff;text-align:center}.final-cta h2{font-size:clamp(38px,7vw,72px);line-height:.95;letter-spacing:-.045em;font-weight:500;margin:0 0 16px}.final-cta p{max-width:36em;margin:0 auto 28px;color:rgba(255,255,255,.82);font-size:17px}.final-cta .land-acts{justify-content:center}.final-cta .rec{background:#fff;border-color:#fff;color:var(--ink)}.final-cta .rec:hover{background:#f3f3f4}.final-cta button:not(.rec){border-color:#fff;color:#fff}.final-cta button:not(.rec):hover{background:rgba(255,255,255,.12)}
 .preview-slots .slot{border:1px solid var(--ink);padding:0;cursor:default;font:12px "JetBrains Mono",ui-monospace,monospace}
 @media (max-width:720px){.trans{gap:18px}.vin{width:96px;height:96px}.wtop{flex-wrap:wrap}.trow{grid-template-columns:72px minmax(0,1fr) auto auto auto}#v-home .hint{margin-left:0;text-align:left}.hero{grid-template-columns:1fr;gap:0;min-height:0;margin-top:-34px}.hero-copy{padding:50px 0 8px}.hero-visual{min-height:min(137vw,540px)}.hero-disc{width:min(91%,420px);right:1%;top:12%}.hero-portrait{right:-2%}.hero-result{left:0;bottom:20px;width:min(252px,72%)}.hero-badge{right:0;top:14%}.flow-art{height:196px}.product-story{padding-top:90px}.story-grid{grid-template-columns:1fr;gap:34px}.studio-window{margin:0 -8px}.studio-screen{overflow-x:auto}.capture-card{grid-template-columns:1fr}.capture-visual{min-height:440px}.capture-visual::before{left:-8%;top:10%}.capture-copy{padding:42px 26px 46px}.export-card{grid-template-columns:1fr}.export-copy{padding:48px 28px 20px}.export-art{min-height:330px}.export-art::before{right:-10%}.export-art img{width:100%;height:100%;right:0;bottom:-4%}.trust-strip{grid-template-columns:1fr}.trust-strip div+div{border-left:0;border-top:1px solid var(--line)}.final-cta{margin-top:80px;padding:44px 24px}}
 @media (max-width:430px){.hero-visual{min-height:480px}.hero-result{padding:12px}.hero-result-grid b{padding:8px 2px}.hero-badge{top:11%}}
 @media (prefers-reduced-motion:reduce){.flow article,.flow-art img{transition:none}.flow article:hover{transform:none}.flow article:hover .flow-art img{transform:none}}
 </style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor" stroke="none"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h1M7 8v8M11 4v16M15 8v8M19 10v4M21 12h0"/></symbol><symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></symbol><symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"/></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6"/></symbol><symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol></defs></svg>
 <main>
-<nav class="top"><button class="plain" id="brand">A/D</button><span class="r"><span id="toast" role="status"></span><button id="navGal" hidden><svg class="i"><use href="#i-folder"/></svg>Projects</button></span></nav>
+<nav class="top"><button class="plain" id="brand" aria-label="Humanizer home">HUMANIZER</button><span class="r"><span id="toast" role="status"></span><button id="navGal" hidden><svg class="i"><use href="#i-folder"/></svg>Projects</button></span></nav>
 
 <div class="view" id="v-home">
-<section class="hero" aria-label="Turn a hum into a song">
-<div class="hero-copy"><p class="eyebrow meta">Voice to song, in your browser</p><h1>From a hum</h1>
-<p class="lede">Hum or sing into the mic. One take becomes sound, lyrics, and a beat. Arrange the bars, mix the tracks, and export the song.</p>
-<div class="land-acts"><button class="rec" data-land="start">Start a song</button><button data-land="projects"><svg class="i"><use href="#i-folder"/></svg>Projects</button></div>
+<section class="hero" aria-label="Start from a voice or a producing session">
+<div class="hero-copy"><p class="eyebrow meta">Voice, or a producing session</p><h1>From a hum</h1>
+<p class="lede">Hum or sing into notes and a beat. Or skip the mic and produce: pick a starter, write the grid, arrange the bars, and mix. Both stay in this browser.</p>
+<div class="land-acts"><button class="rec" data-land="start">Start a song</button><button data-land="produce">Start producing</button><button data-land="projects"><svg class="i"><use href="#i-folder"/></svg>Projects</button></div>
 <p class="meta" style="margin-top:18px">No install. Projects stay on this device.</p></div>
-<div class="hero-visual"><div class="hero-disc" aria-hidden="true"></div><img class="hero-portrait" src="./assets/hero-creator-web.png" alt="Music creator humming into a studio microphone while listening through headphones" width="768" height="1152" decoding="async">
+<div class="hero-visual"><div class="hero-disc" aria-hidden="true"></div><img class="hero-portrait" src="./assets/hero-creator-web.png" alt="Music creator humming into a studio microphone while listening through headphones" width="768" height="1152" fetchpriority="high" decoding="async">
 <span class="hero-badge" aria-hidden="true"><i></i>LIVE IDEA</span>
-<div class="hero-result" aria-hidden="true"><span>One take becomes</span><div class="hero-result-grid"><b><svg class="i"><use href="#i-wave"/></svg>Sound</b><b><svg class="i"><use href="#i-text"/></svg>Lyrics</b><b><svg class="i"><use href="#i-grid"/></svg>Beat</b></div></div></div>
+<div class="hero-result" aria-hidden="true"><span>Shape every part</span><div class="hero-result-grid"><b><svg class="i"><use href="#i-wave"/></svg>Sound</b><b><svg class="i"><use href="#i-text"/></svg>Lyrics</b><b><svg class="i"><use href="#i-grid"/></svg>Beat</b></div></div></div>
 </section>
 
-<section class="zone" aria-label="One take, three parts"><div class="th"><h2>One take, three parts</h2><p class="hint">From one recording</p></div>
+<section class="zone" aria-label="Two ways to start"><div class="th"><h2>Two ways to start</h2><p class="hint">Same workspace either way</p></div>
+<div class="parts" style="margin-top:0">
+<article class="part"><div class="ph"><svg class="i"><use href="#i-mic"/></svg><h2>From a voice</h2></div><p class="meta">Hum or sing. The take becomes notes, lyrics, and a beat you can edit.</p><button class="rec" data-land="start">Start a song</button></article>
+<article class="part"><div class="ph"><svg class="i"><use href="#i-grid"/></svg><h2>From the session</h2></div><p class="meta">Skip the mic. Write drums, chords, and the arrangement, then add a voice if you want one.</p><button data-land="produce">Start producing</button></article>
+</div></section>
+
+<section class="zone" aria-label="One idea, three parts"><div class="th"><h2>One idea, three parts</h2><p class="hint">When you start from a recording</p></div>
 <div class="parts" style="margin-top:0">
 <article class="part"><div class="ph"><svg class="i"><use href="#i-wave"/></svg><h2>Sound</h2></div><canvas id="homeSound" width="320" height="110"></canvas><p class="meta">Pitch becomes notes you can move</p></article>
 <article class="part"><div class="ph"><svg class="i"><use href="#i-text"/></svg><h2>Lyrics</h2></div><p class="snip">stay with me tonight</p><p class="meta">Words line up with the melody</p></article>
@@ -233,7 +256,7 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 <section class="zone product-story" aria-label="Product workspace preview"><div class="story-grid">
 <div class="story-copy"><p class="section-kicker">The product</p><h2>Not a blank timeline.</h2><p class="desc">Your recording arrives as something you can already play, understand, and shape.</p>
 <ol class="story-points"><li><span>01</span><div><b>Move the melody</b><p>Drag notes to change pitch or timing.</p></div></li><li><span>02</span><div><b>Rewrite the rhythm</b><p>Tap the step grid and humanize the feel.</p></div></li><li><span>03</span><div><b>Build the form</b><p>Turn the motif into sections and variations.</p></div></li></ol></div>
-<div class="studio-window" role="img" aria-label="Preview of the song workspace with editable tracks, arrangement clips, and melody notes"><div class="studio-chrome"><i></i><i></i><i></i><b>Algorithmic Studio</b><span>LOCAL PROJECT</span></div><div class="studio-screen">
+<div class="studio-window" role="img" aria-label="Preview of the song workspace with editable tracks, arrangement clips, and melody notes"><div class="studio-chrome"><i></i><i></i><i></i><b>Humanizer Studio</b><span>LOCAL PROJECT</span></div><div class="studio-screen">
 <div class="demo-head"><span class="demo-play"><svg class="i"><use href="#i-play"/></svg></span><span class="demo-title"><b>Late night idea</b><small>100 BPM &middot; C MINOR</small></span><span class="demo-save">SAVED</span></div>
 <div class="demo-tabs"><span>ARRANGE</span><span>SOUND</span><span>LYRICS</span><span>BEAT</span></div>
 <div class="demo-timeline"><div class="demo-playhead"></div><div class="demo-ruler"><span>BARS</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span></div>
@@ -250,28 +273,35 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 
 <section class="zone" aria-label="How a song starts"><div class="th"><h2>How a song starts</h2></div>
 <div class="flow">
-<article><figure class="flow-art"><img src="./assets/step-record-web.png" alt="Studio microphone in a shock mount" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">01 · Capture</p><h2>Record</h2><p class="desc">Set a tempo, count in, and sing. Or drop in a voice memo.</p></div></article>
-<article><figure class="flow-art"><img src="./assets/step-split-web.png" alt="One audio cable splitting into three outputs" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">02 · Separate</p><h2>Split</h2><p class="desc">The take opens as sound, lyrics, and a beat you can each edit.</p></div></article>
-<article><figure class="flow-art"><img src="./assets/step-arrange-web.png" alt="Music production pad controller" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">03 · Build</p><h2>Arrange</h2><p class="desc">Each bar is empty, drums, sound, or both. Build the form from there.</p></div></article>
-<article><figure class="flow-art"><img src="./assets/step-deliver-web.png" alt="Studio headphones around a mastered audio disc" width="640" height="640" decoding="async"></figure><div class="flow-copy"><p class="n meta">04 · Finish</p><h2>Deliver</h2><p class="desc">Mix the tracks, then export WAV, MIDI, stems, or a share pack.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-record-web.png" alt="Studio microphone in a shock mount" width="640" height="640" loading="lazy" decoding="async"></figure><div class="flow-copy"><p class="n meta">01 · Capture</p><h2>Record</h2><p class="desc">Set a tempo, count in, and sing. Or drop in a voice memo.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-split-web.png" alt="One audio cable splitting into three outputs" width="640" height="640" loading="lazy" decoding="async"></figure><div class="flow-copy"><p class="n meta">02 · Separate</p><h2>Split</h2><p class="desc">The take opens as editable sound and beat patterns, with lyrics ready to shape.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-arrange-web.png" alt="Music production pad controller" width="640" height="640" loading="lazy" decoding="async"></figure><div class="flow-copy"><p class="n meta">03 · Build</p><h2>Arrange</h2><p class="desc">Each bar is empty, drums, sound, or both. Build the form from there.</p></div></article>
+<article><figure class="flow-art"><img src="./assets/step-deliver-web.png" alt="Studio headphones around a mastered audio disc" width="640" height="640" loading="lazy" decoding="async"></figure><div class="flow-copy"><p class="n meta">04 · Finish</p><h2>Deliver</h2><p class="desc">Mix the tracks, then export WAV, MIDI, stems, or a share pack.</p></div></article>
 </div></section>
 
 <section class="zone" aria-label="Export options"><div class="export-card"><div class="export-copy"><p class="section-kicker">Take it with you</p><h2>Keep the session. Take the files.</h2><p class="desc">Finish here or move into the rest of your workflow with aligned, useful exports.</p><div class="format-list"><span>WAV MIX</span><span>MIDI</span><span>STEMS</span><span>SHARE PACK</span></div></div><div class="export-art"><img src="./assets/step-deliver-web.png" alt="Studio headphones around a mastered audio disc" width="640" height="640" loading="lazy" decoding="async"></div></div>
 <div class="trust-strip"><div><b>Browser based</b><span>NO INSTALL REQUIRED</span></div><div><b>Local by default</b><span>PROJECTS STAY ON DEVICE</span></div><div><b>DAW ready</b><span>WAV, MIDI, AND STEMS</span></div></div></section>
 
-<div class="final-cta"><h2>Your first take is enough.</h2><p>Start with the idea you can hum. Shape the rest once you can hear it.</p><button class="rec" data-land="start">Start a song</button></div>
+<div class="final-cta"><h2>Start from either side.</h2><p>Hum the idea, or open a session and produce the beat. Shape the rest once you can hear it.</p><div class="land-acts"><button class="rec" data-land="start">Start a song</button><button data-land="produce">Start producing</button></div></div>
 </div>
 
-<div class="view" id="v-gallery"><h1>Projects</h1><p class="desc">Pick up where you left off.</p><div class="cards" id="cards"></div></div>
+<div class="view" id="v-gallery"><h1>Projects</h1><p class="desc">Pick up where you left off, or start from a voice or a session.</p><div class="cards" id="cards"></div></div>
+
+<div class="view" id="v-produce"><h1>Start producing</h1><p class="desc">Open a blank session, or start from a beat you can already play. A voice can come in later.</p>
+<div class="bar" style="margin-top:28px"><button class="rec" id="blankSession">Blank session</button></div>
+<div class="cards" id="starters"></div></div>
 
 <div class="view" id="v-record"><h1>Sing an idea</h1><p class="desc">Hum or sing. The mic follows how it sounds.</p>
 <div class="mic" id="mic"><div class="halo"></div><div class="words" id="words"></div><div class="art" id="micArt"></div></div>
 <p class="micap" id="micap" aria-live="polite"></p>
 <div class="recopt"><label>Tempo <b id="recBpmV">100 BPM</b><input type="range" id="recBpm" min="60" max="160" value="100"></label>
-<button type="button" class="chip on" id="countIn" aria-pressed="true">Count-in: on</button></div>
+<button type="button" class="chip on" id="countIn" aria-pressed="true">Count-in: on</button>
+<label style="display:flex;flex-direction:row;align-items:center;gap:6px;font-size:12px;color:var(--mut)">Mic <select id="micSource" style="padding:4px 8px;font-size:12px;max-width:180px"><option value="">Default Microphone</option></select></label>
+<button type="button" class="chip" id="micMonitor" aria-pressed="false" title="Toggle live microphone cue/monitoring">Monitor: off</button>
+<span class="chip" id="midiBadge" style="font-size:11px;opacity:0.75" title="Web MIDI hardware controller status">MIDI: idle</span></div>
 <div class="act"><button class="rec" id="rec"></button></div>
 <p id="msg">Allow microphone access when asked, then sing or hum.</p>
-<div class="bar c"><button id="upl"><svg class="i"><use href="#i-up"/></svg>Upload a voice memo</button><button id="demo"><svg class="i"><use href="#i-spark"/></svg>Use demo idea</button><button id="recBack" hidden><svg class="i"><use href="#i-folder"/></svg>Projects</button><input type="file" id="file" accept="audio/*" hidden></div></div>
+<div class="bar c"><button id="upl"><svg class="i"><use href="#i-up"/></svg>Upload a voice memo</button><button id="demo"><svg class="i"><use href="#i-spark"/></svg>Use demo idea</button><button id="recBack" hidden><svg class="i"><use href="#i-folder"/></svg>Projects</button><input type="file" id="file" accept="audio/*" aria-label="Upload an audio file" hidden></div></div>
 
 <div class="view" id="v-split"><h1 id="sTitle">Splitting your idea</h1><p class="desc">One recording, three parts you can edit.</p>
 <div class="parts">
@@ -282,7 +312,7 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 <section class="zone" aria-label="Pitch over time"><div class="th"><h2>Pitch</h2><p class="hint">Gray is rejected, black is raw pitch, red is an octave fix, bars are the melody</p></div>
 <canvas id="pitchDbg" width="960" height="220" aria-label="Pitch over time"></canvas>
 <div class="sl tune">
-<label>RMS min <b id="rmsV">0.020</b><input type="range" id="rmsMin" min="0" max="0.1" step="0.005" value="0.02"></label>
+<label>RMS min <b id="rmsV">0.008</b><input type="range" id="rmsMin" min="0" max="0.1" step="0.002" value="0.008"></label>
 <label>Clarity <b id="clarV">0.62</b><input type="range" id="clarityMin" min="0.3" max="0.95" step="0.01" value="0.62"></label>
 <label>Octave fold <b id="octFV">10</b><input type="range" id="octaveFold" min="7" max="15" step="1" value="10"></label>
 <label>Octave tolerance <b id="octTV">3</b><input type="range" id="octaveTol" min="0" max="6" step="1" value="3"></label>
@@ -303,24 +333,31 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 <section class="zone" aria-label="Arrangement"><div class="th"><h2>Arrangement</h2><p class="hint">Click a bar to cycle: empty, drums, sound, both</p></div>
 <div class="scroll"><div class="names" id="secNames"></div><div class="slots" id="slots"></div></div></section>
 
-<div class="tabs" role="tablist"><button class="tab on" data-t="sound"><svg class="i"><use href="#i-wave"/></svg>Sound</button><button class="tab" data-t="lyrics"><svg class="i"><use href="#i-text"/></svg>Lyrics</button><button class="tab" data-t="beat"><svg class="i"><use href="#i-grid"/></svg>Beat</button><button class="tab" data-t="expand"><svg class="i"><use href="#i-spark"/></svg>Expand</button></div>
+<div class="tabs" role="tablist" aria-label="Workspace tools"><button class="tab on" id="tab-sound" role="tab" aria-selected="true" aria-controls="t-sound" data-t="sound"><svg class="i"><use href="#i-wave"/></svg>Sound</button><button class="tab" id="tab-lyrics" role="tab" aria-selected="false" aria-controls="t-lyrics" tabindex="-1" data-t="lyrics"><svg class="i"><use href="#i-text"/></svg>Lyrics</button><button class="tab" id="tab-beat" role="tab" aria-selected="false" aria-controls="t-beat" tabindex="-1" data-t="beat"><svg class="i"><use href="#i-grid"/></svg>Beat</button><button class="tab" id="tab-expand" role="tab" aria-selected="false" aria-controls="t-expand" tabindex="-1" data-t="expand"><svg class="i"><use href="#i-spark"/></svg>Expand</button></div>
 
-<section class="panel" id="t-sound"><div class="th"><h2>Sound</h2><p class="hint">Click a note to give it a word. Drag it to change pitch or timing.</p></div>
+<section class="panel" id="t-sound" role="tabpanel" aria-labelledby="tab-sound"><div class="th"><h2>Sound</h2><p class="hint">Double-click empty space to add a note. Click a note for its word. Drag it to change pitch or timing. Delete removes the selected note. Record adds a take. Punch replaces the selected note. Split, join, and trim edit the waveform.</p></div>
 <div class="rollwrap"><canvas id="roll" width="960" height="340"></canvas></div>
-<div class="bar" style="margin-top:24px"><button class="chip" data-o="sine">Soft</button><button class="chip" data-o="triangle">Warm</button><button class="chip" data-o="sawtooth">Bright</button><button class="chip" data-o="square">Retro</button>
+<div class="sl" id="noteTune" hidden>
+<label>Level <input type="range" id="noteVel" min="0" max="1" step="0.01" value="0.7" data-law="audio" aria-label="Note level"><span class="db" id="noteVelV"></span></label>
+<label>Tune <b id="noteCentsV">0 ct</b><input type="range" id="noteCents" min="-100" max="100" step="1" value="0" aria-label="Note tune"></label>
+<label>Trim <b id="noteTrimV">0 ms</b><input type="range" id="noteTrim" min="0" max="0" step="0.001" value="0" aria-label="Slice trim"></label>
+<label>End <b id="noteTrimEndV">0 ms</b><input type="range" id="noteTrimEnd" min="0" max="0" step="0.001" value="0" aria-label="Slice end trim"></label>
+<label>Slip <b id="noteSlipV">0 ms</b><input type="range" id="noteSlip" min="0" max="0" step="0.001" value="0" aria-label="Slice slip"></label>
+</div>
+<div class="bar" style="margin-top:24px"><span id="takeChips"></span><button type="button" class="chip" id="recAgain">Record</button><button type="button" class="chip" id="useTake">Use take</button><button type="button" class="chip" id="splitNote">Split</button><button type="button" class="chip" id="joinNote">Join</button><button type="button" class="chip" id="quantizeBtn" title="Snap melody notes to 1/16 grid">Quantize</button><button type="button" class="chip" id="ghostBtn" aria-pressed="false" title="Show chord progression in background">Ghost: off</button><button type="button" class="chip" id="zoomOutBtn" title="Zoom out piano roll">−</button><button type="button" class="chip" id="zoomInBtn" title="Zoom in piano roll">+</button><button class="chip" data-o="sine">Soft</button><button class="chip" data-o="triangle">Warm</button><button class="chip" data-o="sawtooth">Bright</button><button class="chip" data-o="square">Retro</button>
 <button id="octD">Octave down</button><span class="lab" id="octV">0 oct</span><button id="octU">Octave up</button><button id="clr">Clear notes</button>
-<label>Voice <select id="voiceSrc"><option value="take">My voice</option><option value="clone">Clone (API later)</option></select></label></div></section>
+<input type="hidden" id="voiceSrc" value="take"></div></section>
 
-<section class="panel" id="t-lyrics" hidden><div class="th"><h2>Lyrics</h2><p class="hint" id="lyrNote">Words line up with the melody notes</p></div><textarea id="lyr" rows="3" placeholder="Type your words here."></textarea></section>
+<section class="panel" id="t-lyrics" role="tabpanel" aria-labelledby="tab-lyrics" hidden><div class="th"><h2>Lyrics</h2><p class="hint" id="lyrNote">Words line up with the melody notes</p></div><textarea id="lyr" rows="3" aria-label="Lyrics" placeholder="Type your words here."></textarea></section>
 
-<section class="panel" id="t-beat" hidden><div class="th"><h2>Beat</h2><p class="hint" id="beatInfo">Tap steps to draw your own</p></div>
+<section class="panel" id="t-beat" role="tabpanel" aria-labelledby="tab-beat" hidden><div class="th"><h2>Beat</h2><p class="hint" id="beatInfo">Tap steps to draw your own</p></div>
 <div class="sl"><label>Swing <b id="swV">30%</b><input type="range" id="sw" min="0" max="100" value="30"></label>
 <label>Velocity variance <b id="vvV">25%</b><input type="range" id="vv" min="0" max="60" value="25"></label>
 <label>Timing drift <b id="tdV">8 ms</b><input type="range" id="td" min="0" max="30" value="8"></label>
 <button id="hz" class="chip on" aria-pressed="true">Humanize: on</button></div>
 <div class="bar" style="margin-bottom:20px"><button id="reana">Re-analyze at current tempo</button></div><div class="scroll" id="grid"></div></section>
 
-<section class="panel" id="t-expand" hidden><div class="th"><h2>Expand the hum</h2><p class="hint">The hum stays the motif. These controls only decide how far it goes.</p></div>
+<section class="panel" id="t-expand" role="tabpanel" aria-labelledby="tab-expand" hidden><div class="th"><h2>Expand the hum</h2><p class="hint">The hum stays the motif. These controls only decide how far it goes.</p></div>
 <div class="sl">
 <label>Key <b id="keyV">C</b><select id="keySel"></select></label>
 <label>Scale <b id="scaleV">Major</b><select id="scaleSel"><option value="major">Major</option><option value="minor">Minor</option><option value="pentatonic">Pentatonic</option></select></label>
@@ -336,14 +373,23 @@ canvas#pitchDbg{width:100%;height:220px;background:var(--off);border-radius:4px;
 </div>
 
 <div class="view" id="v-producer">
-<div class="wtop"><button class="plain" id="prodBack"><svg class="i"><use href="#i-back"/></svg>Back</button><h2>Producer</h2><span class="r"><button id="prodPlay">Play</button><button id="prodSave"><svg class="i"><use href="#i-save"/></svg>Save</button></span></div>
+<div class="wtop"><button class="plain" id="prodBack"><svg class="i"><use href="#i-back"/></svg>Back</button><h2>Producer</h2><span class="r"><button id="prodSave"><svg class="i"><use href="#i-save"/></svg>Save</button></span></div>
 <p class="desc">Deeper controls for the song you are already writing.</p>
-<div class="tabs" id="prodTabs" role="tablist"><button class="tab on" data-p="mix">Mix</button><button class="tab" data-p="beat">Beat</button><button class="tab" data-p="sound">Sound</button><button class="tab" data-p="arrange">Arrange</button><button class="tab" data-p="deliver">Deliver</button></div>
-<section class="panel" id="p-mix"></section>
-<section class="panel" id="p-beat" hidden></section>
-<section class="panel" id="p-sound" hidden></section>
-<section class="panel" id="p-arrange" hidden></section>
-<section class="panel" id="p-deliver" hidden></section>
+<div class="prod-transport" role="group" aria-label="Transport">
+<button type="button" id="prodHome" aria-label="Return to start">|&lt;</button>
+<button type="button" id="prodPlay">Play</button>
+<button type="button" class="chip" id="prodLoop" aria-pressed="false">Loop</button>
+<span class="prod-position" id="prodPosition" aria-live="off">1.1.1</span>
+<label>Tempo<input type="number" id="prodBpm" min="60" max="160" step="1" value="100" aria-label="Tempo in BPM"></label>
+<label class="prod-seek">Timeline<input type="range" id="prodSeek" min="0" max="8" step="0.0625" value="0" aria-label="Song position"></label>
+<div class="loop-range"><label>Loop start<input type="number" id="prodLoopStart" min="1" max="8" step="1" value="1"></label><label>Loop end<input type="number" id="prodLoopEnd" min="1" max="8" step="1" value="8"></label></div>
+</div>
+<div class="tabs" id="prodTabs" role="tablist" aria-label="Producer tools"><button class="tab on" id="prod-tab-mix" role="tab" aria-selected="true" aria-controls="p-mix" data-p="mix">Mix</button><button class="tab" id="prod-tab-beat" role="tab" aria-selected="false" aria-controls="p-beat" tabindex="-1" data-p="beat">Beat</button><button class="tab" id="prod-tab-sound" role="tab" aria-selected="false" aria-controls="p-sound" tabindex="-1" data-p="sound">Sound</button><button class="tab" id="prod-tab-arrange" role="tab" aria-selected="false" aria-controls="p-arrange" tabindex="-1" data-p="arrange">Arrange</button><button class="tab" id="prod-tab-deliver" role="tab" aria-selected="false" aria-controls="p-deliver" tabindex="-1" data-p="deliver">Deliver</button></div>
+<section class="panel" id="p-mix" role="tabpanel" aria-labelledby="prod-tab-mix"></section>
+<section class="panel" id="p-beat" role="tabpanel" aria-labelledby="prod-tab-beat" hidden></section>
+<section class="panel" id="p-sound" role="tabpanel" aria-labelledby="prod-tab-sound" hidden></section>
+<section class="panel" id="p-arrange" role="tabpanel" aria-labelledby="prod-tab-arrange" hidden></section>
+<section class="panel" id="p-deliver" role="tabpanel" aria-labelledby="prod-tab-deliver" hidden></section>
 </div>
 </main>
 <script type="module" src="./app.js"></script></body></html>

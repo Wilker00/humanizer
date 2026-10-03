@@ -2,6 +2,7 @@ import { evaluateAutomationAt } from './automation.js';
 import { midiToPitch } from './score-tools.js';
 import { validateProject } from './project-format.js';
 import { defaultGroupBuses } from './pro-features.js';
+import { normalizeTransport } from './transport.js';
 
 export const GROUP_FOR = { melody: 'music', drums: 'drums', chords: 'music', bass: 'music', vocal: 'vocals' };
 
@@ -9,6 +10,8 @@ export function ensureMix(track) {
   if (!track.fx) track.fx = [];
   if (track.send == null) track.send = 0;
   if (track.delaySend == null) track.delaySend = 0;
+  if (track.pan == null) track.pan = 0;
+  track.pan = Math.max(-1, Math.min(1, Number(track.pan) || 0));
   if (!track.group) track.group = GROUP_FOR[track.type] || 'music';
   return track;
 }
@@ -23,13 +26,16 @@ export function freshSessionFields(song) {
   if (!song.automation) song.automation = {};
   if (!Array.isArray(song.clips)) song.clips = [];
   if (song.latencyOffsetMs == null) song.latencyOffsetMs = 0;
-  song.tracks.forEach(ensureMix);
+  if (song.masterVolume == null) song.masterVolume = 0.92;
+  song.masterVolume = Math.max(0, Math.min(1.25, Number(song.masterVolume) || 0));
+  song.transport = normalizeTransport(song.transport, song.bars || 1);
+  if (song.tracks) song.tracks.forEach(ensureMix);
   return song;
 }
 
 export function rebuildClips(slots) {
   const clips = [];
-  for (const track of ['drums', 'melody']) {
+  for (const track of ['drums', 'melody', 'chords', 'bass', 'vocal', 'vocals']) {
     let start = -1;
     slots.forEach((slot, bar) => {
       const on = slot === 'both' || slot === track;

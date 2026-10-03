@@ -510,6 +510,10 @@ export function splitClip(playlist, trackId, clipId, atBar, snap = '1/16') {
     right.takeStart = mid;
   }
   clip.lengthBars = leftLen;
+  if (clip.automation) {
+    right.automation = clip.automation.filter(p => p.bar >= leftLen).map(p => ({ ...p, bar: p.bar - leftLen }));
+    clip.automation = clip.automation.filter(p => p.bar < leftLen);
+  }
   track.clips.push(right);
   return right;
 }
@@ -526,8 +530,13 @@ export function joinClips(playlist, trackId, clipIdA, clipIdB) {
   if (!samePattern && !sameAudio) return null;
   const gap = right.startBar - (left.startBar + left.lengthBars);
   if (Math.abs(gap) > 0.01) return null;
+  const leftLen = left.lengthBars;
   left.lengthBars += right.lengthBars;
   if (sameAudio) left.takeEnd = right.takeEnd ?? left.takeEnd;
+  if (right.automation) {
+    const rAuto = right.automation.map(p => ({ ...p, bar: p.bar + leftLen }));
+    left.automation = [...(left.automation || []), ...rAuto];
+  }
   track.clips = track.clips.filter(c => c.id !== right.id);
   return left;
 }
@@ -585,7 +594,8 @@ export function reorderTracks(trackList, playlist, fromId, toId) {
   const to = trackList.findIndex(t => t.id === toId);
   if (from < 0 || to < 0 || from === to) return false;
   const [item] = trackList.splice(from, 1);
-  trackList.splice(to, 0, item);
+  const adjustedTo = from < to ? to - 1 : to;
+  trackList.splice(adjustedTo, 0, item);
   if (playlist?.tracks) {
     const order = trackList.map(t => t.id);
     playlist.tracks.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));

@@ -198,6 +198,37 @@ function highShelf(samples, sampleRate, freq, gainDb) {
   return applyBiquad(samples, b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
 }
 
+function lowShelf(samples, sampleRate, freq, gainDb) {
+  const A = 10 ** (gainDb / 40);
+  const w0 = 2 * Math.PI * freq / sampleRate;
+  const cos = Math.cos(w0);
+  const sin = Math.sin(w0);
+  const alpha = sin / 2 * Math.SQRT2;
+  const twoSqrtA = 2 * Math.sqrt(A);
+  const b0 = A * ((A + 1) - (A - 1) * cos + twoSqrtA * alpha);
+  const b1 = 2 * A * ((A - 1) - (A + 1) * cos);
+  const b2 = A * ((A + 1) - (A - 1) * cos - twoSqrtA * alpha);
+  const a0 = (A + 1) + (A - 1) * cos + twoSqrtA * alpha;
+  const a1 = -2 * ((A - 1) + (A + 1) * cos);
+  const a2 = (A + 1) + (A - 1) * cos - twoSqrtA * alpha;
+  return applyBiquad(samples, b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
+}
+
+function peaking(samples, sampleRate, freq, gainDb, Q = 0.9) {
+  const A = 10 ** (gainDb / 40);
+  const w0 = 2 * Math.PI * freq / sampleRate;
+  const cos = Math.cos(w0);
+  const sin = Math.sin(w0);
+  const alpha = sin / (2 * Q);
+  const b0 = 1 + alpha * A;
+  const b1 = -2 * cos;
+  const b2 = 1 - alpha * A;
+  const a0 = 1 + alpha / A;
+  const a1 = -2 * cos;
+  const a2 = 1 - alpha / A;
+  return applyBiquad(samples, b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
+}
+
 function onePoleLowpass(samples, sampleRate, cutoff) {
   const out = new Float32Array(samples.length);
   const rc = 1 / (2 * Math.PI * Math.max(20, cutoff));
@@ -222,8 +253,8 @@ function applyFx(samples, sampleRate, fx) {
   const amount = fxAmount(fx);
   if (fx.type === 'eq') {
     const bands = eqBandsDb(fx.params, amount);
-    let data = highShelf(samples, sampleRate, 140, bands.low);
-    data = highShelf(data, sampleRate, 1000, bands.mid * 0.15);
+    let data = lowShelf(samples, sampleRate, 140, bands.low);
+    data = peaking(data, sampleRate, 1000, bands.mid * 0.15);
     return highShelf(data, sampleRate, 6500, bands.high);
   }
   if (fx.type === 'filter') {

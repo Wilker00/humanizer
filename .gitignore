@@ -1,3 +1,6 @@
 node_modules/
+dist/
+playwright-report/
+test-results/
 .chrome-diagnostic/
 .cursor/

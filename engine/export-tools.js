@@ -1,7 +1,7 @@
 /**
  * Export and Audio Analysis Tools
  * Handles stem resolution, true-peak calculation, MIDI track extraction,
- * chord editing, and selection helpers for BMAI music-making features.
+ * chord editing, and selection helpers for Humanizer music-making features.
  */
 
 import { stepsPerBar, pulseSteps, beatsPerBar } from './arrangement-engine.js';
@@ -379,7 +379,7 @@ export function generateDemoBlurb(project = {}) {
     `Chords: ${chords}\n` +
     `Tracks: ${tracks}\n` +
     `Arrangement: ${sections}\n` +
-    `Created with BMAI Studio (https://bmai.app)`;
+    `Created with Humanizer`;
 }
 
 /**
@@ -395,7 +395,7 @@ export function sharePackStemName(projectName, trackId) {
 }
 
 export function generateSharePackReadme(project = {}, { stemNames = [] } = {}) {
-  const name = project.name || 'BMAI Project';
+  const name = project.name || 'Humanizer Project';
   const bpm = project.bpm || 92;
   const key = project.key || 'A minor';
   const meter = project.meter || '4/4';
@@ -412,14 +412,14 @@ export function generateSharePackReadme(project = {}, { stemNames = [] } = {}) {
     : '   (no separate stems in this pack)';
 
   return `======================================================================
-BMAI Guided Studio — Audio & Project Share Pack
+Humanizer — Audio & Project Share Pack
 ======================================================================
 Project Title:   ${name}
 Tempo:           ${bpm} BPM
 Key Signature:   ${key}
 Time Signature:  ${meter}
 Export Date:     ${date}
-Engine:          BMAI Schema v3 / Offline Web Audio
+Engine:          Humanizer Project v3 / Offline Web Audio
 
 FILES INCLUDED IN THIS ARCHIVE:
 ----------------------------------------------------------------------
@@ -429,7 +429,7 @@ FILES INCLUDED IN THIS ARCHIVE:
    are printed into this file and into the stems.
 
 2. ${safe}.json
-   Portable BMAI project: tracks, patterns, notes, automation, mix.
+   Portable Humanizer project: tracks, patterns, notes, automation, mix.
 
 3. metadata.json
    Tempo, key, meter, section lengths, and markers.
@@ -449,9 +449,9 @@ MARKERS:
 ----------------------------------------------------------------------
 ${markers}
 
-HOW TO REOPEN IN BMAI:
+HOW TO REOPEN IN HUMANIZER:
 ----------------------------------------------------------------------
-1. Open BMAI in any modern browser (Chrome, Edge, Safari, Firefox).
+1. Open Humanizer in any modern browser (Chrome, Edge, Safari, Firefox).
 2. Go to Studio Home > Saved Projects > Import (.json).
 3. Select "${safe}.json".
 
@@ -467,4 +467,3 @@ OPEN IN ABLETON, FL STUDIO, OR LOGIC:
 ======================================================================
 `;
 }
-

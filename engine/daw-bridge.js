@@ -465,7 +465,8 @@ export function applyDawSnapshotFields(state, project) {
 
 export function makeClipUnique(state, trackId, clipId) {
   ensureDawState(state);
-  const trackClips = state.playlist?.[trackId];
+  const track = (state.playlist?.tracks || []).find(t => t.id === trackId);
+  const trackClips = track?.clips;
   if (!Array.isArray(trackClips)) return null;
   const clip = trackClips.find(c => c.id === clipId);
   if (!clip || !clip.patternId) return null;

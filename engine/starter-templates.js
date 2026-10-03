@@ -1,5 +1,5 @@
 /**
- * Starter Template Gallery for BMAI
+ * Starter Template Gallery for Humanizer
  * Pre-configured, high-energy musical templates that let any cold visitor or
  * presenter experience audible, playable music in < 5 seconds.
  */
@@ -357,10 +357,10 @@ export const STARTER_TEMPLATES = [
 ];
 
 /**
- * Creates a fully validated Schema v3 BMAI project from a starter template definition.
+ * Creates a fully validated Humanizer Schema v3 project from a starter template definition.
  *
  * @param {Object} template
- * @returns {Object} Valid BMAI schema v3 project snapshot
+ * @returns {Object} Valid Humanizer schema v3 project snapshot
  */
 export function createProjectFromTemplate(template) {
   const id = crypto.randomUUID();
@@ -494,4 +494,3 @@ export function createProjectFromTemplate(template) {
     playlist: { tracks: playlistTracks }
   };
 }
-

@@ -121,7 +121,13 @@ export function mergeLockedNotes(generated = [], locked = []) {
     const width = Math.max(1, Number(note.w) || 1);
     for (let i = 0; i < width; i++) blocked.add(Number(note.x) + i);
   }
-  const rest = (generated || []).filter(note => !blocked.has(note.x));
+  const rest = (generated || []).filter(note => {
+    const width = Math.max(1, Number(note.w) || 1);
+    for (let i = 0; i < width; i++) {
+      if (blocked.has(Number(note.x) + i)) return false;
+    }
+    return true;
+  });
   return [...kept.map(note => ({ ...note, locked: true })), ...rest]
     .sort((a, b) => a.x - b.x || String(a.n).localeCompare(String(b.n)));
 }

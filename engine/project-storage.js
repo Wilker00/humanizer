@@ -33,7 +33,7 @@ function openDatabase() {
         if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
       };
       request.onerror = () => fail(request.error);
-      request.onblocked = () => fail(new Error('Another BMAI tab is blocking audio storage'));
+      request.onblocked = () => fail(new Error('Another Humanizer tab is blocking audio storage'));
       request.onsuccess = () => {
         const database = request.result;
         if (failed) { database.close(); return; }
@@ -100,7 +100,7 @@ export async function storeAudioAsset(blob) {
 }
 
 async function readStoredAsset(ref) {
-  if (!isStoredAudioAsset(ref)) throw new Error('Invalid BMAI audio asset reference.');
+  if (!isStoredAudioAsset(ref)) throw new Error('Invalid Humanizer audio asset reference.');
   const record = await transact('readonly', (store, done) => {
     const request = store.get(ref.slice(PREFIX.length));
     request.onsuccess = () => done(request.result);
@@ -129,7 +129,7 @@ function cloneProject(snapshot) {
 
 function localReference(ref) {
   if (typeof ref !== 'string') return false;
-  if (ref.startsWith(PREFIX) && !isStoredAudioAsset(ref)) throw new Error('Invalid BMAI audio asset reference.');
+  if (ref.startsWith(PREFIX) && !isStoredAudioAsset(ref)) throw new Error('Invalid Humanizer audio asset reference.');
   return isStoredAudioAsset(ref) || ref.startsWith('blob:');
 }
 
